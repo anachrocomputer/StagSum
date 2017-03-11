@@ -277,6 +277,7 @@ void putblk(FILE *fp,
          break;
       case INTELFMT:
          fprintf(fp, ":%02X%04lX00", nbytes, blkaddr);
+         checksum = nbytes;
          break;
       default:
          fprintf(stderr, "in putblk: shouldn't happen\n");
