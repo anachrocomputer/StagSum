@@ -1,4 +1,4 @@
-/* hexa --- convert hex and binary file formats             1999-08-18 */
+/* ppzsum --- convert hex and binary file formats           1999-08-18 */
 /* Copyright (c) 1999 John Honniball, Froods Software Development      */
 
 #include <stdio.h>
@@ -18,13 +18,13 @@
 
 #define K         (1024)
 
-void putblk (FILE *fp, const unsigned char *buf, int fmt, int nbytes, long int blkaddr);
-static int mostech (const char *lin, char *buf, long int *blkaddr);
-static int intel86 (const char *lin, char *buf, long int *blkaddr);
+int getfmt(const char s[]);
+int getblk(FILE *fp, unsigned char *buf, int fmt, const int blksiz, long int *blkaddr);
+void putblk(FILE *fp, const unsigned char *buf, const int fmt, const int nbytes, long int blkaddr);
+static int mostech(const char *lin, unsigned char *buf, long int *blkaddr);
+static int intel86(const char *lin, unsigned char *buf, long int *blkaddr);
 
-int main (argc, argv)
-int argc;
-const char *argv[];
+int main(int argc, const char *argv[])
 {
    int i;
    char suff;
@@ -48,24 +48,24 @@ const char *argv[];
          switch (argv[i][1]) {
          case 'i':
          case 'I':
-            infmt = getfmt (argv[i]);
+            infmt = getfmt(argv[i]);
             break;
          case 'o':
          case 'O':
-            outfmt = getfmt (argv[i]);
+            outfmt = getfmt(argv[i]);
             break;
          case 'p':
          case 'P':
-            sscanf (&argv[i][2], "%d", &nbytes);
+            sscanf(&argv[i][2], "%d", &nbytes);
             
-            suff = argv[i][strlen (argv[i]) - 1];
+            suff = argv[i][strlen(argv[i]) - 1];
             
             if ((suff == 'k') || (suff == 'K'))
                nbytes *= K;
 
             if ((nbytes < 1) || (nbytes > (64 * K))) {
-               fprintf (stderr, "Invalid padding length (%d)\n", nbytes);
-               exit (1);
+               fprintf(stderr, "Invalid padding length (%d)\n", nbytes);
+               exit(1);
             }
             
             ppzlen = nbytes;
@@ -75,28 +75,28 @@ const char *argv[];
 
 #ifdef MSDOS
    if (infmt == BINFMT) {
-      if (setmode (fileno (infp), O_BINARY) < 0) {
-         perror ("Cannot set binary mode for input file");
-         exit (1);
+      if (setmode(fileno(infp), O_BINARY) < 0) {
+         perror("Cannot set binary mode for input file");
+         exit(1);
       }
    }
    
    if (outfmt == BINFMT) {
-      if (setmode (fileno (outfp), O_BINARY) < 0) {
-         perror ("Cannot set binary mode for output file");
-         exit (1);
+      if (setmode(fileno(outfp), O_BINARY) < 0) {
+         perror("Cannot set binary mode for output file");
+         exit(1);
       }
    }
 #endif
    
    /* Seek over binary file header, if any */
    if ((infmt == BINFMT) && (in_offset != 0L)) {
-      fseek (infp, in_offset, SEEK_SET);
+      fseek(infp, in_offset, SEEK_SET);
    }
    
    /* Loop, copying data blocks through */
-   while ((nbytes = getblk (infp, buf, infmt, blksiz, &blkaddr)) > 0) {
-      putblk (outfp, buf, outfmt, nbytes, blkaddr + out_offset);
+   while ((nbytes = getblk(infp, buf, infmt, blksiz, &blkaddr)) > 0) {
+      putblk(outfp, buf, outfmt, nbytes, blkaddr + out_offset);
       for (i = 0; i < nbytes; i++) {
          ppzsum += buf[i];
          ppzcnt++;
@@ -106,36 +106,36 @@ const char *argv[];
    /* Check for abnormal termination */
    if (nbytes < 0) {
       if (infmt == BINFMT) {
-         perror ("input file read error");
+         perror("input file read error");
       }
       else {
-         fputs ("input file read error\n", stderr);
+         fputs("input file read error\n", stderr);
       }
    }
    
    /* Write EOF record */
    switch (outfmt) {
    case MOSFMT:                    
-      fprintf (outfp, ";0000010001\n");
+      fprintf(outfp, ";0000010001\n");
       break;
    case SRECFMT:
-      fprintf (outfp, "S9030000FC\n");
+      fprintf(outfp, "S9030000FC\n");
       break;
    case INTELFMT:
-      fprintf (outfp, ":00000001FF\n");
+      fprintf(outfp, ":00000001FF\n");
       break;
    case BINFMT:
       break;
    default:
-      printf ("in main: shouldn't happen\n");
+      fprintf(stderr, "in main: shouldn't happen\n");
       break;
    }
 
-   fprintf (stderr, "PPZ checksum = %04X (%d bytes)\n", ppzsum & 0xffff, ppzcnt);
+   fprintf(stderr, "PPZ checksum = %04X (%d bytes)\n", ppzsum & 0xffff, ppzcnt);
    for ( ; ppzcnt < ppzlen; ppzcnt++)
       ppzsum += 0xff;
       
-   fprintf (stderr, "PPZ checksum padded = %04X\n", ppzsum & 0xffff);
+   fprintf(stderr, "PPZ checksum padded = %04X\n", ppzsum & 0xffff);
    
    return (0);
 }
@@ -143,8 +143,7 @@ const char *argv[];
 
 /* getfmt --- parse format letter */
 
-int getfmt (s)
-const char s[];
+int getfmt(const char s[])
 {
    int fmt = ERRFMT;
 
@@ -177,27 +176,26 @@ const char s[];
 
 /* getblk --- read a block of code from an input file */
 
-int getblk (fp, buf, fmt, blksiz, blkaddr)
-FILE *fp;
-unsigned char *buf;
-int fmt;
-int blksiz;
-long int *blkaddr;
+int getblk(FILE *fp,
+            unsigned char *buf,
+            int fmt,
+            const int blksiz,
+            long int *blkaddr)
 {
    static long int filepos = 0L;
    int nbytes;
-   unsigned char lin[256];
+   char lin[256];
    
    if (fmt == BINFMT) {
       *blkaddr = filepos;
 
-      nbytes = fread (buf, 1, blksiz, fp);
+      nbytes = fread(buf, 1, blksiz, fp);
 
       if (nbytes > 0)
          filepos += (long int)nbytes;
    }
    else {
-      if (fgets (lin, sizeof (lin), fp) == NULL)
+      if (fgets(lin, sizeof (lin), fp) == NULL)
          return (0);    /* Normal EOF */
          
       if (fmt == HEXFMT) {
@@ -212,7 +210,7 @@ long int *blkaddr;
             fmt = MOSFMT;
             break;
          default:
-            fprintf (stderr, "Unrecognised input hex format\n");
+            fprintf(stderr, "Unrecognised input hex format\n");
             return (-1);
             break;
          }
@@ -221,31 +219,31 @@ long int *blkaddr;
       switch (fmt) {
       case MOSFMT:
          if (lin[0] != ';') {
-            fprintf (stderr, "Invalid MOS Technology hex file\n");
+            fprintf(stderr, "Invalid MOS Technology hex file\n");
             return (-1);
          }
          
-         nbytes = mostech (lin, buf, blkaddr);
+         nbytes = mostech(lin, buf, blkaddr);
          break;
       case SRECFMT:
          if (lin[0] != 'S') {
-            fprintf (stderr, "Invalid S-record hex file\n");
+            fprintf(stderr, "Invalid S-record hex file\n");
             return (-1);
          }
          break;
       case INTELFMT:
          if (lin[0] != ':') {
-            fprintf (stderr, "Invalid Intel hex file\n");
+            fprintf(stderr, "Invalid Intel hex file\n");
             return (-1);
          }
 
-         nbytes = intel86 (lin, buf, blkaddr);
+         nbytes = intel86(lin, buf, blkaddr);
          break;
       }
    }
    
 #ifdef DB
-   fprintf (stderr, "getblk: nbytes = %d\n", nbytes);
+   fprintf(stderr, "getblk: nbytes = %d\n", nbytes);
 #endif
    
    return (nbytes);
@@ -254,35 +252,34 @@ long int *blkaddr;
 
 /* putblk --- puts a block of code onto the object file */
 
-void putblk (fp, buf, fmt, nbytes, blkaddr)
-FILE *fp;
-const unsigned char *buf;
-int fmt;
-int nbytes;
-long int blkaddr;
+void putblk(FILE *fp,
+            const unsigned char *buf,
+            const int fmt,
+            const int nbytes,
+            long int blkaddr)
 {
    int i;
    unsigned int checksum;
 
    if (fmt == BINFMT) {
-      if (fwrite (buf, 1, nbytes, fp) != nbytes)
-         perror ("fwrite");
+      if(fwrite (buf, 1, nbytes, fp) != nbytes)
+         perror("fwrite");
    }
    else {
       switch (fmt) {
       case MOSFMT:
-         fprintf (fp, ";%02X%04lX", nbytes, blkaddr);
+         fprintf(fp, ";%02X%04lX", nbytes, blkaddr);
          checksum = nbytes;
          break;
       case SRECFMT:
-         fprintf (fp, "S1%02X%04lX", nbytes + 3, blkaddr);
+         fprintf(fp, "S1%02X%04lX", nbytes + 3, blkaddr);
          checksum = nbytes + 3;
          break;
       case INTELFMT:
-         fprintf (fp, ":%02X%04lX00", nbytes, blkaddr);
+         fprintf(fp, ":%02X%04lX00", nbytes, blkaddr);
          break;
       default:
-         printf ("in putblk: shouldn't happen\n");
+         fprintf(stderr, "in putblk: shouldn't happen\n");
          break;
       }
 
@@ -290,24 +287,24 @@ long int blkaddr;
       checksum += (blkaddr >> 8) & 0xff;
 
       for (i = 0; i < nbytes; i++) {
-         fprintf (fp, "%02X", buf[i]);
+         fprintf(fp, "%02X", buf[i]);
          checksum += buf[i];
       }
 
       switch (fmt) {
       case MOSFMT:
-         fprintf (fp, "%04X\n", checksum & 0xffff);
+         fprintf(fp, "%04X\n", checksum & 0xffff);
          break;
       case SRECFMT:
          checksum = ~checksum;
-         fprintf (fp, "%02X\n", checksum & 0xff);
+         fprintf(fp, "%02X\n", checksum & 0xff);
          break;
       case INTELFMT:
          checksum = ~checksum + 1;
-         fprintf (fp, "%02X\n", checksum & 0xff);
+         fprintf(fp, "%02X\n", checksum & 0xff);
          break;
       default:
-         printf ("in putblk: shouldn't happen\n");
+         fprintf(stderr, "in putblk: shouldn't happen\n");
          break;
       }
    }
@@ -316,7 +313,7 @@ long int blkaddr;
 
 /* mostech */
 
-static int mostech (const char *lin, char *buf, long int *blkaddr)
+static int mostech(const char *lin, unsigned char *buf, long int *blkaddr)
 {
    unsigned int a;
    char len[3];
@@ -331,7 +328,7 @@ static int mostech (const char *lin, char *buf, long int *blkaddr)
    unsigned int sum2;   /* Checksum computed from data bytes */
    int i, j;
    
-   slen = strlen (lin);
+   slen = strlen(lin);
 
    len[0] = lin[1];
    len[1] = lin[2];
@@ -343,37 +340,37 @@ static int mostech (const char *lin, char *buf, long int *blkaddr)
    addr[3] = lin[6];
    addr[4] = '\0';
    
-   if (sscanf (len, "%x", &nbytes) != 1) {
-/*    fprintf (stderr, "%s: invalid length byte (%s) in line %d:\n", fname, len, l); */
-      fprintf (stderr, "invalid length byte (%s):\n", len);
-      fputs (lin, stderr);
+   if (sscanf(len, "%x", &nbytes) != 1) {
+/*    fprintf(stderr, "%s: invalid length byte (%s) in line %d:\n", fname, len, l); */
+      fprintf(stderr, "invalid length byte (%s):\n", len);
+      fputs(lin, stderr);
       return (-1);
    }
 
-   if (sscanf (addr, "%x", &a) != 1) {
-/*    fprintf (stderr, "%s: invalid address (%s) in line %d:\n", fname, addr, l); */
-      fprintf (stderr, "invalid address (%s):\n", addr);   
-      fputs (lin, stderr);
+   if (sscanf(addr, "%x", &a) != 1) {
+/*    fprintf(stderr, "%s: invalid address (%s) in line %d:\n", fname, addr, l); */
+      fprintf(stderr, "invalid address (%s):\n", addr);   
+      fputs(lin, stderr);
       return (-1);
    }
    
    nchars = (nbytes * 2) + 12;
    
 #ifdef DB
-   printf ("addr = %04x, len = %02x, nchars = %d, strlen = %d\n",
-                   a,          nbytes,        nchars,      slen);
+   printf("addr = %04x, len = %02x, nchars = %d, strlen = %d\n",
+                  a,          nbytes,        nchars,      slen);
 #endif
    
    if (nchars > slen) {
-/*    fprintf (stderr, "%s: line %d too short:\n", fname, l); */
-      fprintf (stderr, "line too short:\n");
-      fputs (lin, stderr);
+/*    fprintf(stderr, "%s: line %d too short:\n", fname, l); */
+      fprintf(stderr, "line too short:\n");
+      fputs(lin, stderr);
       return (-1);
    }
    else if (nchars < slen) {
-/*    fprintf (stderr, "%s: line %d too long:\n", fname, l); */
-      fprintf (stderr, "line too long:\n");
-      fputs (lin, stderr);
+/*    fprintf(stderr, "%s: line %d too long:\n", fname, l); */
+      fprintf(stderr, "line too long:\n");
+      fputs(lin, stderr);
       return (-1);
    }
    
@@ -383,10 +380,10 @@ static int mostech (const char *lin, char *buf, long int *blkaddr)
    chks[3] = lin[nchars - 2];
    chks[4] = '\0';
    
-   if (sscanf (chks, "%x", &sum1) != 1) {
-/*    fprintf (stderr, "%s: invalid checksum (%s) in line %d:\n", fname, chks, l); */
-      fprintf (stderr, "invalid checksum (%s):\n", chks);
-      fputs (lin, stderr);
+   if (sscanf(chks, "%x", &sum1) != 1) {
+/*    fprintf(stderr, "%s: invalid checksum (%s) in line %d:\n", fname, chks, l); */
+      fprintf(stderr, "invalid checksum (%s):\n", chks);
+      fputs(lin, stderr);
       return (-1);
    }
    
@@ -399,15 +396,15 @@ static int mostech (const char *lin, char *buf, long int *blkaddr)
       byte[1] = lin[j++];
       byte[2] = '\0';
       
-      sscanf (byte, "%x", &b);
+      sscanf(byte, "%x", &b);
       buf[i] = b;
       sum2 += b;
    }
    
    if (sum1 != sum2) {
-/*    fprintf (stderr, "%s: checksum error in line %d: computed %04x, read %s\n", fname, l, sum2, chks); */
-      fprintf (stderr, "checksum error: computed %04x, read %s\n", sum2, chks);
-      fputs (lin, stderr);
+/*    fprintf(stderr, "%s: checksum error in line %d: computed %04x, read %s\n", fname, l, sum2, chks); */
+      fprintf(stderr, "checksum error: computed %04x, read %s\n", sum2, chks);
+      fputs(lin, stderr);
       return (-1);
    }
    
@@ -419,10 +416,7 @@ static int mostech (const char *lin, char *buf, long int *blkaddr)
 
 /* intel86 */
 
-static int intel86 (lin, buf, blkaddr)
-const char *lin;
-char *buf;
-long int *blkaddr;
+static int intel86(const char *lin, unsigned char *buf, long int *blkaddr)
 {
    unsigned int a;
    unsigned int itype;
@@ -439,7 +433,7 @@ long int *blkaddr;
    unsigned int sum2;   /* Checksum computed from data bytes */
    int i, j;
    
-   slen = strlen (lin);
+   slen = strlen(lin);
 
    len[0] = lin[1];
    len[1] = lin[2];
@@ -455,44 +449,44 @@ long int *blkaddr;
    type[1] = lin[8];
    type[2] = '\0';
    
-   if (sscanf (len, "%x", &nbytes) != 1) {
-/*    fprintf (stderr, "%s: invalid length byte (%s) in line %d:\n", fname, len, l); */
-      fprintf (stderr, "invalid length byte (%s):\n", len);
-      fputs (lin, stderr);
+   if (sscanf(len, "%x", &nbytes) != 1) {
+/*    fprintf(stderr, "%s: invalid length byte (%s) in line %d:\n", fname, len, l); */
+      fprintf(stderr, "invalid length byte (%s):\n", len);
+      fputs(lin, stderr);
       return (-1);
    }
 
-   if (sscanf (addr, "%x", &a) != 1) {
-/*    fprintf (stderr, "%s: invalid address (%s) in line %d:\n", fname, addr, l); */
-      fprintf (stderr, "invalid address (%s):\n", addr);   
-      fputs (lin, stderr);
+   if (sscanf(addr, "%x", &a) != 1) {
+/*    fprintf(stderr, "%s: invalid address (%s) in line %d:\n", fname, addr, l); */
+      fprintf(stderr, "invalid address (%s):\n", addr);   
+      fputs(lin, stderr);
       return (-1);
    }
    
-   if (sscanf (type, "%x", &itype) != 1) {
-/*    fprintf (stderr, "%s: invalid length byte (%s) in line %d:\n", fname, len, l); */
-      fprintf (stderr, "invalid record type (%s):\n", len);
-      fputs (lin, stderr);
+   if (sscanf(type, "%x", &itype) != 1) {
+/*    fprintf(stderr, "%s: invalid length byte (%s) in line %d:\n", fname, len, l); */
+      fprintf(stderr, "invalid record type (%s):\n", len);
+      fputs(lin, stderr);
       return (-1);
    }
 
    nchars = (nbytes * 2) + 12;
    
 #ifdef DB
-   printf ("addr = %04x, len = %02x, nchars = %d, strlen = %d\n",
-                   a,          nbytes,        nchars,      slen);
+   printf("addr = %04x, len = %02x, nchars = %d, strlen = %d\n",
+                  a,          nbytes,        nchars,      slen);
 #endif
    
    if (nchars > slen) {
-/*    fprintf (stderr, "%s: line %d too short:\n", fname, l); */
-      fprintf (stderr, "line too short:\n");
-      fputs (lin, stderr);
+/*    fprintf(stderr, "%s: line %d too short:\n", fname, l); */
+      fprintf(stderr, "line too short:\n");
+      fputs(lin, stderr);
       return (-1);
    }
    else if (nchars < slen) {
-/*    fprintf (stderr, "%s: line %d too long:\n", fname, l); */
-      fprintf (stderr, "line too long:\n");
-      fputs (lin, stderr);
+/*    fprintf(stderr, "%s: line %d too long:\n", fname, l); */
+      fprintf(stderr, "line too long:\n");
+      fputs(lin, stderr);
       return (-1);
    }
    
@@ -500,10 +494,10 @@ long int *blkaddr;
    chks[1] = lin[nchars - 2];
    chks[2] = '\0';
    
-   if (sscanf (chks, "%x", &sum1) != 1) {
-/*    fprintf (stderr, "%s: invalid checksum (%s) in line %d:\n", fname, chks, l); */
-      fprintf (stderr, "invalid checksum (%s):\n", chks);
-      fputs (lin, stderr);
+   if (sscanf(chks, "%x", &sum1) != 1) {
+/*    fprintf(stderr, "%s: invalid checksum (%s) in line %d:\n", fname, chks, l); */
+      fprintf(stderr, "invalid checksum (%s):\n", chks);
+      fputs(lin, stderr);
       return (-1);
    }
    
@@ -519,7 +513,7 @@ long int *blkaddr;
       byte[1] = lin[j++];
       byte[2] = '\0';
       
-      sscanf (byte, "%x", &b);
+      sscanf(byte, "%x", &b);
       buf[i] = b;
       sum2 += b;
    }
