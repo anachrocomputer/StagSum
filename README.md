@@ -34,12 +34,12 @@ It is not in any way secure against malicious alteration.
 
 ## The Stag PPZ ##
 
-<a data-flickr-embed="true" href="https://www.flickr.com/photos/anachrocomputer/2185799066/in/album-72157603795019803/" title="Stag PPZ EPROM programmer"><img src="https://live.staticflickr.com/2129/2185799066_d961d75a5c.jpg" width="500" height="333" alt="Stag PPZ EPROM programmer"></a><script async src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
+<a data-flickr-embed="true" href="https://www.flickr.com/photos/anachrocomputer/2185799066/in/album-72157603795019803/" title="Stag PPZ EPROM programmer"><img src="https://live.staticflickr.com/2129/2185799066_d961d75a5c.jpg" width="500" height="333" alt="Stag PPZ EPROM programmer"></a>
 
 ## The Stag PP39 ##
 
-<a data-flickr-embed="true" href="https://www.flickr.com/photos/anachrocomputer/9262710311/in/album-72157656777542429/" title="Stag PP39 EPROM Programmer"><img src="https://live.staticflickr.com/7383/9262710311_45208a03dc.jpg" width="500" height="375" alt="Stag PP39 EPROM Programmer"></a><script async src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
+<a data-flickr-embed="true" href="https://www.flickr.com/photos/anachrocomputer/9262710311/in/album-72157656777542429/" title="Stag PP39 EPROM Programmer"><img src="https://live.staticflickr.com/7383/9262710311_45208a03dc.jpg" width="500" height="375" alt="Stag PP39 EPROM Programmer"></a>
 
 ## The Stag PP42 ##
 
-<a data-flickr-embed="true" href="https://www.flickr.com/photos/anachrocomputer/51637488633/in/album-72157720021580088/" title="Stag PP42 EPROM Programmer"><img src="https://live.staticflickr.com/65535/51637488633_4d950cb1e6.jpg" width="500" height="375" alt="Stag PP42 EPROM Programmer"></a><script async src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
+<a data-flickr-embed="true" href="https://www.flickr.com/photos/anachrocomputer/51637488633/in/album-72157720021580088/" title="Stag PP42 EPROM Programmer"><img src="https://live.staticflickr.com/65535/51637488633_4d950cb1e6.jpg" width="500" height="375" alt="Stag PP42 EPROM Programmer"></a>
